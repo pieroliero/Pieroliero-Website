@@ -4,3 +4,5 @@
 .banner{height:clamp(150px,17vw,220px);max-height:none;object-fit:contain;object-position:center;background:#f5c205}
 
 .store-banner{position:relative;overflow:hidden;height:clamp(150px,22vw,220px);background:#f5c205}.store-banner .banner{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,1000px);height:auto;max-height:none;object-fit:initial}
+
+header{background:#281316}body{background:#f4ebd5;color:#281316}.shop-link{border-color:#56303c}.shop-link:hover{background:#56303c}
