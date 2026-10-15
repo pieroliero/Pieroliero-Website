@@ -16,11 +16,11 @@ function renderChannel(key){const info=channelInfo[key];let body='';
  screenContent.innerHTML=`<div class="broadcast ${key}-broadcast"><span class="ident">LATE NIGHT WITH PIEROLIERO</span><span class="channel-id">${info.number}</span>${body}${action}</div>`;
  screen.setAttribute('aria-label',`Channel ${info.number}: ${info.name}`);
 }
-function switchChannel(key){if(!channelOrder.includes(key))return;playTuningSound();clearTimeout(tuningTimer);powered=true;screen.classList.remove('is-off');document.querySelector('#power').setAttribute('aria-pressed','true');document.querySelector('#power').setAttribute('aria-label','Turn television off');currentChannel=key;document.querySelectorAll('[data-channel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.channel===key)));document.querySelector('.dial').style.transform=`rotate(${channelOrder.indexOf(key)*55}deg)`;if(reducedMotion.matches){screen.classList.remove('is-tuning');renderChannel(key);return;}screen.classList.add('is-tuning');renderChannel(key);tuningTimer=setTimeout(()=>screen.classList.remove('is-tuning'),260);}
+function switchChannel(key){if(!channelOrder.includes(key))return;stopTuningSound();clearTimeout(tuningTimer);powered=true;screen.classList.remove('is-off');document.querySelector('#power').setAttribute('aria-pressed','true');document.querySelector('#power').setAttribute('aria-label','Turn television off');currentChannel=key;document.querySelectorAll('[data-channel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.channel===key)));document.querySelector('.dial').style.transform=`rotate(${channelOrder.indexOf(key)*55}deg)`;if(reducedMotion.matches){screen.classList.remove('is-tuning');renderChannel(key);return;}screen.classList.add('is-tuning');playTuningSound();renderChannel(key);tuningTimer=setTimeout(()=>{screen.classList.remove('is-tuning');stopTuningSound()},260);}
 document.querySelectorAll('[data-channel]').forEach(b=>b.addEventListener('click',()=>switchChannel(b.dataset.channel)));
 document.querySelector('#next-channel').addEventListener('click',()=>switchChannel(channelOrder[(channelOrder.indexOf(currentChannel)+1)%channelOrder.length]));
-document.querySelector('#power').addEventListener('click',()=>{powered=!powered;clearTimeout(tuningTimer);screen.classList.remove('is-tuning');screen.classList.toggle('is-off',!powered);document.querySelector('#power').setAttribute('aria-pressed',String(powered));document.querySelector('#power').setAttribute('aria-label',powered?'Turn television off':'Turn television on');});
-reducedMotion.addEventListener('change',()=>{clearTimeout(tuningTimer);screen.classList.remove('is-tuning')});renderChannel(currentChannel);
+document.querySelector('#power').addEventListener('click',()=>{powered=!powered;stopTuningSound();clearTimeout(tuningTimer);screen.classList.remove('is-tuning');screen.classList.toggle('is-off',!powered);document.querySelector('#power').setAttribute('aria-pressed',String(powered));document.querySelector('#power').setAttribute('aria-label',powered?'Turn television off':'Turn television on');});
+reducedMotion.addEventListener('change',()=>{stopTuningSound();clearTimeout(tuningTimer);screen.classList.remove('is-tuning')});renderChannel(currentChannel);
 
 // Featured and shuffled programs use the same saved content as the galleries.
 const programs=[...(window.PIEROLIERO_VLOGS||[]).map(v=>({...v,channel:'travel',category:'ON THE ROAD'})),...(window.PIEROLIERO_GRID||[]).map(v=>({...v,channel:'research',category:'INSTAGRAM REEL'}))];
@@ -80,35 +80,39 @@ if(wallpaper){
  wallpaper.innerHTML=shots.map((src,i)=>`<div class="wallpaper-photo" style="--tilt:${[-7,4,-3,8,5,-6,7,-4,-5,6,-8,3][i%12]}deg"><img src="${escapeHtml(src)}" alt="" loading="lazy"></div>`).join('');
 }
 
-// A brief mechanical tick and analog hiss, created only after an interaction.
+// A short excerpt of the supplied TV recording, audible only during visible static.
 let tvAudioContext=null,tvSoundEnabled=true;
 const soundToggle=document.querySelector('#tuning-sound');
 try{tvSoundEnabled=localStorage.getItem('pieroliero-tv-sound')!=='off'}catch{}
 function updateSoundToggle(){soundToggle.textContent=`TV sound: ${tvSoundEnabled?'on':'off'}`;soundToggle.setAttribute('aria-pressed',String(tvSoundEnabled));soundToggle.setAttribute('aria-label',tvSoundEnabled?'Mute TV tuning sound':'Enable TV tuning sound')}
-soundToggle.addEventListener('click',()=>{tvSoundEnabled=!tvSoundEnabled;try{localStorage.setItem('pieroliero-tv-sound',tvSoundEnabled?'on':'off')}catch{}updateSoundToggle()});
+soundToggle.addEventListener('click',()=>{tvSoundEnabled=!tvSoundEnabled;if(!tvSoundEnabled)stopTuningSound();try{localStorage.setItem('pieroliero-tv-sound',tvSoundEnabled?'on':'off')}catch{}updateSoundToggle()});
 updateSoundToggle();
-function playTuningSound(){
- if(!tvSoundEnabled)return;
+let tuningBuffer=null,tuningSource=null;
+// Decode ahead of the first channel change so sound starts with the visual effect.
+fetch('assets/tv-channel-static.wav').then(response=>{
+ if(!response.ok)throw new Error('TV sound unavailable');
+ return response.arrayBuffer();
+}).then(async bytes=>{
  const AudioEngine=window.AudioContext||window.webkitAudioContext;
  if(!AudioEngine)return;
- try{
-  if(!tvAudioContext)tvAudioContext=new AudioEngine();
-  const audio=tvAudioContext;
-  if(audio.state==='suspended')audio.resume().catch(()=>{});
-  const now=audio.currentTime;
-  const click=audio.createOscillator(),clickGain=audio.createGain();
-  click.type='triangle';click.frequency.setValueAtTime(900,now);click.frequency.exponentialRampToValueAtTime(120,now+.016);
-  clickGain.gain.setValueAtTime(.12,now);clickGain.gain.exponentialRampToValueAtTime(.0001,now+.02);
-  click.connect(clickGain);clickGain.connect(audio.destination);click.start(now);click.stop(now+.022);
-  const buffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*.19),audio.sampleRate),samples=buffer.getChannelData(0);
-  for(let i=0;i<samples.length;i++)samples[i]=Math.random()*2-1;
-  const hiss=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();
-  hiss.buffer=buffer;filter.type='bandpass';filter.frequency.value=2800;filter.Q.value=.55;
-  gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(.065,now+.015);gain.gain.exponentialRampToValueAtTime(.0001,now+.18);
-  hiss.connect(filter);filter.connect(gain);gain.connect(audio.destination);hiss.start(now);hiss.stop(now+.19);
-  click.onended=()=>{click.disconnect();clickGain.disconnect()};hiss.onended=()=>{hiss.disconnect();filter.disconnect();gain.disconnect()};
- }catch{}
+ if(!tvAudioContext)tvAudioContext=new AudioEngine();
+ tuningBuffer=await tvAudioContext.decodeAudioData(bytes);
+}).catch(()=>{});
+function stopTuningSound(){
+ if(!tuningSource)return;
+ try{tuningSource.stop()}catch{}
+ tuningSource=null;
 }
+function playTuningSound(){
+ if(!tvSoundEnabled||!tuningBuffer||!tvAudioContext||tvAudioContext.state!=='running'||!screen.classList.contains('is-tuning')||document.hidden)return;
+ const source=tvAudioContext.createBufferSource(),gain=tvAudioContext.createGain();
+ source.buffer=tuningBuffer;gain.gain.value=.8;
+ source.connect(gain);gain.connect(tvAudioContext.destination);
+ tuningSource=source;
+ source.onended=()=>{source.disconnect();gain.disconnect();if(tuningSource===source)tuningSource=null};
+ source.start();
+}
+addEventListener('visibilitychange',()=>{if(document.hidden)stopTuningSound()});
 
 // One subtle scratch per visit, only while the record is visible.
 let vinylScratchPlayed=false,vinylInView=false;
