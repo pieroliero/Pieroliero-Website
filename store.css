@@ -6,3 +6,6 @@
 .store-banner{position:relative;overflow:hidden;height:clamp(150px,22vw,220px);background:#f5c205}.store-banner .banner{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,1000px);height:auto;max-height:none;object-fit:initial}
 
 header{background:#281316}body{background:#f4ebd5;color:#281316}.shop-link{border-color:#56303c}.shop-link:hover{background:#56303c}
+
+/* Vector marks render consistently on phones without emoji substitution. */
+.ui-arrow{display:inline-block;width:1em;height:1em;vertical-align:-.12em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}

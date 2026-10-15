@@ -126,3 +126,14 @@ dialog{border:1px solid #bca07855;background:#eee3cd;color:var(--ink);width:min(
 /* Keep the entire 16:9 content visible, with a soft fill rather than black bands. */
 .vlog-fill{position:absolute;inset:-5%;width:110%;height:110%;object-fit:cover;transform:scale(1.35);filter:blur(12px) brightness(.65);pointer-events:none}
 .travel-broadcast .vlog-picture,.travel-episode .vlog-picture{left:0;right:0;top:0;width:100%;height:100%;transform:none;z-index:0}
+
+/* Vector marks render consistently on phones without emoji substitution. */
+.ui-arrow{display:inline-block;width:1em;height:1em;vertical-align:-.12em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+.late-night-title .asterisk svg{display:block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2.5}
+@media(min-width:601px){.collage-guide{background-size:cover;background-position:center top}}
+@media(max-width:600px){.collage-guide{padding-top:230px}}
+
+.tuning-note{gap:14px;flex-wrap:wrap}
+#tuning-sound{background:none;color:inherit;border:0;border-bottom:1px solid #351e2944;padding:5px 0;font:500 10px 'DM Sans',sans-serif;white-space:nowrap}
+@media(max-width:600px){#tuning-sound{font-size:9px}}
