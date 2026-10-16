@@ -47,7 +47,7 @@ if(programs.length){
 // Scroll moves the physical objects; reduced-motion users get a still layout.
 const physicalRecord=document.querySelector('.large-record');
 const physicalPhoto=document.querySelector('.host-photo');
-let physicalFrame=0;
+let physicalFrame=0,lastVinylScroll=-Infinity;
 function updatePhysicalObjects(){
  physicalFrame=0;
  checkVinylSound();
@@ -60,7 +60,7 @@ function updatePhysicalObjects(){
  physicalPhoto.style.setProperty('--photo-turn',`${-5+photoProgress*7}deg`);
 }
 function schedulePhysicalObjects(){if(!physicalFrame)physicalFrame=requestAnimationFrame(updatePhysicalObjects)}
-addEventListener('scroll',schedulePhysicalObjects,{passive:true});
+addEventListener('scroll',()=>{lastVinylScroll=performance.now();schedulePhysicalObjects()},{passive:true});
 addEventListener('resize',schedulePhysicalObjects,{passive:true});
 reducedMotion.addEventListener('change',schedulePhysicalObjects);
 schedulePhysicalObjects();
@@ -98,14 +98,21 @@ fetch('assets/tv-channel-static.wav').then(response=>{
  if(!AudioEngine)return;
  if(!tvAudioContext)tvAudioContext=new AudioEngine();
  tuningBuffer=await tvAudioContext.decodeAudioData(bytes);
+ // A quiet, damped knob click at the start of the supplied static clip.
+ for(let channel=0;channel<tuningBuffer.numberOfChannels;channel++){
+  const samples=tuningBuffer.getChannelData(channel);
+  for(let i=0;i<Math.min(samples.length,tuningBuffer.sampleRate*.012);i++)samples[i]+=(Math.random()*2-1)*.22*Math.exp(-i/(tuningBuffer.sampleRate*.0014));
+ }
 }).catch(()=>{});
 function stopTuningSound(){
  if(!tuningSource)return;
  try{tuningSource.stop()}catch{}
  tuningSource=null;
 }
-function playTuningSound(){
- if(!tvSoundEnabled||!tuningBuffer||!tvAudioContext||tvAudioContext.state!=='running'||!screen.classList.contains('is-tuning')||document.hidden)return;
+async function playTuningSound(){
+ if(!tvSoundEnabled||!tuningBuffer||!tvAudioContext)return;
+ if(tvAudioContext.state==='suspended'){try{await tvAudioContext.resume()}catch{return}}
+ if(tvAudioContext.state!=='running'||!tvSoundEnabled||!screen.classList.contains('is-tuning')||document.hidden)return;
  const source=tvAudioContext.createBufferSource(),gain=tvAudioContext.createGain();
  source.buffer=tuningBuffer;gain.gain.value=.8;
  source.connect(gain);gain.connect(tvAudioContext.destination);
@@ -115,11 +122,11 @@ function playTuningSound(){
 }
 addEventListener('visibilitychange',()=>{if(document.hidden)stopTuningSound()});
 
-// One subtle scratch per visit, only while the record is visible.
-let vinylScratchPlayed=false,vinylInView=false;
+// Short scratches follow scrolling while the vinyl is visible, with room between them.
+let lastVinylScratch=-Infinity,vinylInView=false;
 function playVinylScratch(){
- if(document.hidden||reducedMotion.matches||vinylScratchPlayed||!vinylInView||!tvSoundEnabled||!tvAudioContext||tvAudioContext.state!=='running')return;
- vinylScratchPlayed=true;
+ if(document.hidden||reducedMotion.matches||performance.now()-lastVinylScroll>180||performance.now()-lastVinylScratch<750||!vinylInView||!tvSoundEnabled||!tvAudioContext||tvAudioContext.state!=='running')return;
+ lastVinylScratch=performance.now();
  physicalRecord.dataset.scratchCount=String((Number(physicalRecord.dataset.scratchCount)||0)+1);
  const audio=tvAudioContext,now=audio.currentTime;
  const scratch=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();
@@ -145,12 +152,14 @@ addEventListener('wheel',unlockSiteSound,{passive:true});
 function checkVinylSound(){
  const box=physicalRecord.getBoundingClientRect();
  const visibleHeight=Math.max(0,Math.min(box.bottom,innerHeight)-Math.max(box.top,0));
+ const wasVisible=vinylInView;
  vinylInView=visibleHeight>=Math.min(box.height,innerHeight)*.25;
+ if(!vinylInView&&wasVisible)lastVinylScratch=-Infinity;
  if(vinylInView)playVinylScratch();
 }
 
 addEventListener('keydown',unlockSiteSound,{passive:true});
 if('IntersectionObserver' in window){
- const scratchObserver=new IntersectionObserver(entries=>{for(const entry of entries){checkVinylSound();}if(vinylScratchPlayed)scratchObserver.disconnect();},{threshold:[0,.1,.25,.35]});
+ const scratchObserver=new IntersectionObserver(checkVinylSound,{threshold:[0,.1,.25,.35]});
  scratchObserver.observe(physicalRecord);
 }
