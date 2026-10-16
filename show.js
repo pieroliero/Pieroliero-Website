@@ -50,6 +50,7 @@ const physicalPhoto=document.querySelector('.host-photo');
 let physicalFrame=0;
 function updatePhysicalObjects(){
  physicalFrame=0;
+ checkVinylSound();
  if(reducedMotion.matches){physicalRecord.style.removeProperty('--record-turn');physicalPhoto.style.removeProperty('--photo-turn');return;}
  const recordBox=physicalRecord.getBoundingClientRect();
  const recordProgress=(innerHeight-recordBox.top)/(innerHeight+recordBox.height);
@@ -117,7 +118,7 @@ addEventListener('visibilitychange',()=>{if(document.hidden)stopTuningSound()});
 // One subtle scratch per visit, only while the record is visible.
 let vinylScratchPlayed=false,vinylInView=false;
 function playVinylScratch(){
- if(vinylScratchPlayed||!vinylInView||!tvSoundEnabled||!tvAudioContext||tvAudioContext.state!=='running')return;
+ if(document.hidden||reducedMotion.matches||vinylScratchPlayed||!vinylInView||!tvSoundEnabled||!tvAudioContext||tvAudioContext.state!=='running')return;
  vinylScratchPlayed=true;
  physicalRecord.dataset.scratchCount=String((Number(physicalRecord.dataset.scratchCount)||0)+1);
  const audio=tvAudioContext,now=audio.currentTime;
@@ -126,18 +127,30 @@ function playVinylScratch(){
  for(let i=0;i<samples.length;i++){const t=i/audio.sampleRate;samples[i]=(Math.random()*2-1)*.65+Math.sin(t*2*Math.PI*340)*.16;}
  scratch.buffer=buffer;scratch.playbackRate.setValueAtTime(1.2,now);scratch.playbackRate.linearRampToValueAtTime(.45,now+.12);scratch.playbackRate.linearRampToValueAtTime(1.45,now+.24);
  filter.type='bandpass';filter.Q.value=1.4;filter.frequency.setValueAtTime(2200,now);filter.frequency.exponentialRampToValueAtTime(420,now+.12);filter.frequency.exponentialRampToValueAtTime(1800,now+.24);
- gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(.045,now+.018);gain.gain.linearRampToValueAtTime(.012,now+.12);gain.gain.linearRampToValueAtTime(.035,now+.17);gain.gain.exponentialRampToValueAtTime(.0001,now+.27);
+ gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(.11,now+.018);gain.gain.linearRampToValueAtTime(.03,now+.12);gain.gain.linearRampToValueAtTime(.085,now+.17);gain.gain.exponentialRampToValueAtTime(.0001,now+.27);
  scratch.connect(filter);filter.connect(gain);gain.connect(audio.destination);scratch.start(now);scratch.stop(now+.28);
  scratch.onended=()=>{scratch.disconnect();filter.disconnect();gain.disconnect()};
 }
 async function unlockSiteSound(){
  if(!tvSoundEnabled)return;
  const AudioEngine=window.AudioContext||window.webkitAudioContext;if(!AudioEngine)return;
- try{if(!tvAudioContext)tvAudioContext=new AudioEngine();if(tvAudioContext.state==='suspended')await tvAudioContext.resume();playVinylScratch()}catch{}
+ try{if(!tvAudioContext)tvAudioContext=new AudioEngine();if(tvAudioContext.state==='suspended')await tvAudioContext.resume();checkVinylSound()}catch{}
 }
+// Touch browsers often unlock audio on release rather than pointer-down.
 addEventListener('pointerdown',unlockSiteSound,{passive:true});
+addEventListener('pointerup',unlockSiteSound,{passive:true});
+addEventListener('touchend',unlockSiteSound,{passive:true});
+addEventListener('click',unlockSiteSound,{passive:true});
+addEventListener('wheel',unlockSiteSound,{passive:true});
+function checkVinylSound(){
+ const box=physicalRecord.getBoundingClientRect();
+ const visibleHeight=Math.max(0,Math.min(box.bottom,innerHeight)-Math.max(box.top,0));
+ vinylInView=visibleHeight>=Math.min(box.height,innerHeight)*.25;
+ if(vinylInView)playVinylScratch();
+}
+
 addEventListener('keydown',unlockSiteSound,{passive:true});
 if('IntersectionObserver' in window){
- const scratchObserver=new IntersectionObserver(entries=>{for(const entry of entries){vinylInView=entry.isIntersecting&&entry.intersectionRatio>=.35;if(vinylInView)playVinylScratch();}if(vinylScratchPlayed)scratchObserver.disconnect();},{threshold:[0,.35]});
+ const scratchObserver=new IntersectionObserver(entries=>{for(const entry of entries){checkVinylSound();}if(vinylScratchPlayed)scratchObserver.disconnect();},{threshold:[0,.1,.25,.35]});
  scratchObserver.observe(physicalRecord);
 }
