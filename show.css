@@ -137,3 +137,6 @@ dialog{border:1px solid #bca07855;background:#eee3cd;color:var(--ink);width:min(
 .tuning-note{gap:14px;flex-wrap:wrap}
 #tuning-sound{background:none;color:inherit;border:0;border-bottom:1px solid #351e2944;padding:5px 0;font:500 10px 'DM Sans',sans-serif;white-space:nowrap}
 @media(max-width:600px){#tuning-sound{font-size:9px}}
+
+/* Screen blending keeps the supplied neon K and removes its black backdrop. */
+.kick-screen-logo{position:absolute;right:1%;top:17%;width:53%;height:69%;object-fit:contain;mix-blend-mode:screen;opacity:.8;pointer-events:none}
