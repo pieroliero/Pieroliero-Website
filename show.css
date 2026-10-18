@@ -145,3 +145,9 @@ dialog{border:1px solid #bca07855;background:#eee3cd;color:var(--ink);width:min(
 
 /* Panel headings receive focus for screen readers, without a visual control outline. */
 #panel-title:focus{outline:none}
+
+.hotline-card{margin:28px 0;padding:clamp(22px,4vw,38px);border:1px solid #58354140;background:#58354108}
+#panel-content .hotline-card .eyebrow{margin:0 0 14px}
+#panel-content .hotline-card h3{font:500 clamp(27px,4vw,40px)/1.15 Fraunces,Georgia,serif;margin:0 0 20px}
+.hotline-number{display:inline-block;padding:12px 18px;background:var(--ink);color:var(--cream);font-size:clamp(17px,2.5vw,23px)}
+.hotline-card small{display:block;font-size:12px;line-height:1.6;opacity:.75}
