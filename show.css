@@ -151,3 +151,17 @@ dialog{border:1px solid #bca07855;background:#eee3cd;color:var(--ink);width:min(
 #panel-content .hotline-card h3{font:500 clamp(27px,4vw,40px)/1.15 Fraunces,Georgia,serif;margin:0 0 20px}
 .hotline-number{display:inline-block;padding:12px 18px;background:var(--ink);color:var(--cream);font-size:clamp(17px,2.5vw,23px)}
 .hotline-card small{display:block;font-size:12px;line-height:1.6;opacity:.75}
+
+/* Feature the release in the CRT without changing the cabinet or channel controls. */
+.tv-video-wrap{position:absolute;inset:0;display:grid;place-items:center;background:#151018}
+.tv-video-wrap video{width:100%;height:100%;object-fit:contain;display:block}
+.tv-video-play{position:absolute;bottom:clamp(10px,10%,36px);left:50%;transform:translateX(-50%);display:inline-flex;gap:.45em;align-items:center;min-height:44px;white-space:nowrap;padding:0 14px;border:1px solid #fff0ceca;border-radius:4px;background:#2c1b27ef;color:#fff2da;font-size:clamp(10px,1.5vw,15px);z-index:4}
+.tv-video-play[hidden],.tv-video-status[hidden]{display:none}
+.tv-video-play:hover{background:#351e29;color:white}
+.tv-video-play:focus-visible,.tv-track a:focus-visible{outline:2px solid #e64874;outline-offset:3px}
+.tv-video-status{position:absolute;z-index:4;top:8%;left:9%;right:9%;margin:0;padding:4px 6px;background:#2c1b27f2;color:white;font-size:clamp(10px,1.4vw,14px);text-align:center;pointer-events:none}
+.music-broadcast:has(.tv-video-wrap) .ident,.music-broadcast:has(.tv-video-wrap) .channel-id{display:none}
+.music-broadcast .tv-video-wrap{z-index:3}
+.screen:has(.tv-video-wrap) .scanlines,.screen:has(.tv-video-wrap):after{opacity:0}
+.tv-track{text-align:center;margin:0 auto 10px}
+.tv-track a{display:inline-flex;align-items:center;min-height:44px;color:var(--wine);font-size:14px;text-underline-offset:4px}

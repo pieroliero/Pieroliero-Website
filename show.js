@@ -5,21 +5,37 @@ const channelInfo={music:{number:'01',name:'AFTER HOURS',action:'Explore the mus
 // YouTube HQ thumbnails contain a 16:9 picture inside a 480x360 file.
 // Crop only the baked-in bands, then fit the complete picture across the CRT.
 function vlogPicture(src,title){const url=escapeHtml(src),label=escapeHtml(title);return `<svg class="picture vlog-picture" viewBox="0 45 480 270" preserveAspectRatio="xMinYMid slice" role="img" aria-label="${label}"><defs><clipPath id="vlog-content-crop"><rect x="0" y="45" width="480" height="270"/></clipPath></defs><image href="${url}" x="0" y="0" width="480" height="360" preserveAspectRatio="none" clip-path="url(#vlog-content-crop)"/></svg>`;}
+function pauseMusicVideo(){screenContent.querySelector('video')?.pause();}
 function renderChannel(key){const info=channelInfo[key];let body='';
- if(key==='music')body=`<img class="screen-portrait" src="assets/professor.webp" alt="Pierre Real, PieroLiero"><div class="music-copy"><h2>AFTER<br>HOURS.</h2><p>No Money No Honey.<br>Out now on Spotify.</p></div><span class="screen-caption">YOUR HOST: PIERRE REAL</span>`;
+ pauseMusicVideo();
+ if(key==='music')body=`<div class="tv-video-wrap"><video id="music-video" aria-label="No Money No Honey music video" preload="none" playsinline poster="assets/no-money-no-honey-poster.webp"><source src="assets/no-money-no-honey-story-v2.mp4" type="video/mp4"></video><button type="button" class="tv-video-play" aria-label="Play No Money No Honey music video" aria-controls="music-video"><span aria-hidden="true">▶</span><span>Play music video</span></button><p class="tv-video-status" role="status" hidden></p></div>`;
  if(key==='travel'){const v=(window.PIEROLIERO_VLOGS||[])[0];body=`${vlogPicture(v.thumbnail,v.title)}<div class="shade"></div><div class="program-copy"><small>THE TRAVEL EPISODES</small><h2>International<br>incidents.</h2><p>Vlogs, detours, and the Passport Pro chapter.</p></div>`;}
  if(key==='research'){const r=(window.PIEROLIERO_GRID||[])[0];body=`<img class="picture" src="${escapeHtml(r.thumbnail)}" alt="Post from PieroLiero’s Instagram"><div class="shade"></div><div class="program-copy"><small>INSTAGRAM REELS</small><h2>Straight from<br>the feed.</h2><p>Comedy. Street stories. Nightlife.</p></div>`;}
  if(key==='live')body='<div class="test-pattern"></div><img class="kick-screen-logo" src="assets/kick-logo.png" alt="" aria-hidden="true"><div class="program-copy"><small>PIEROLIERO ON KICK</small><h2>Live from<br>Kick.</h2><p>I DJ. You call in with your Bad Decisions.</p></div>';
  if(key==='events')body='<img class="picture event-photo" src="assets/bad-decisions-club.webp" alt="Bad Decisions nightclub scene"><div class="shade"></div><img class="events-logo" src="assets/bad-decisions-logo.png" alt=""><div class="program-copy"><small>EVENTS / AFTER HOURS</small><h2>Bad<br>Decisions.</h2><p>Don’t make other plans just yet.</p></div>';
  if(key==='store')body='<img class="picture" src="assets/store/image-0.jpg" alt="Pieroliero Third Wheels on Your Hinge Date"><div class="shade"></div><div class="program-copy"><small>EXCEPTIONALLY QUESTIONABLE VALUE</small><h2>As seen on<br>PieroLiero.</h2><p>The original joke store.</p></div>';
- const action=(key==='store'||key==='events')?`<a class="on-screen-action" href="${key==='events'?'https://baddecisionslive.com':'store.html'}">${info.action} <svg class="ui-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></a>`:`<button class="on-screen-action" data-panel="${key}">${info.action} <svg class="ui-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></button>`;
+ const action=key==='music'?'':(key==='store'||key==='events')?`<a class="on-screen-action" href="${key==='events'?'https://baddecisionslive.com':'store.html'}">${info.action} <svg class="ui-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></a>`:`<button class="on-screen-action" data-panel="${key}">${info.action} <svg class="ui-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></button>`;
  screenContent.innerHTML=`<div class="broadcast ${key}-broadcast"><span class="ident">LATE NIGHT WITH PIEROLIERO</span><span class="channel-id">${info.number}</span>${body}${action}</div>`;
  screen.setAttribute('aria-label',`Channel ${info.number}: ${info.name}`);
+ if(key==='music'){
+  const video=screenContent.querySelector('video'), play=screenContent.querySelector('.tv-video-play'), status=screenContent.querySelector('.tv-video-status');
+  play.addEventListener('click',()=>{
+   video.controls=true;
+   play.hidden=true;
+   status.hidden=true;
+   video.play().then(()=>video.focus({preventScroll:true})).catch(error=>{
+    if(!video.isConnected||!powered||error.name==='AbortError')return;
+    status.textContent='The video couldn’t start. Try the play control again.';
+    status.hidden=false;
+   });
+  });
+  video.addEventListener('playing',()=>{status.hidden=true;});
+ }
 }
 function switchChannel(key){if(!channelOrder.includes(key))return;stopTuningSound();clearTimeout(tuningTimer);powered=true;screen.classList.remove('is-off');document.querySelector('#power').setAttribute('aria-pressed','true');document.querySelector('#power').setAttribute('aria-label','Turn television off');currentChannel=key;document.querySelectorAll('[data-channel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.channel===key)));document.querySelector('.dial').style.transform=`rotate(${channelOrder.indexOf(key)*55}deg)`;if(reducedMotion.matches){screen.classList.remove('is-tuning');renderChannel(key);return;}screen.classList.add('is-tuning');playTuningSound();renderChannel(key);tuningTimer=setTimeout(()=>{screen.classList.remove('is-tuning');stopTuningSound()},260);}
 document.querySelectorAll('[data-channel]').forEach(b=>b.addEventListener('click',()=>switchChannel(b.dataset.channel)));
 document.querySelector('#next-channel').addEventListener('click',()=>switchChannel(channelOrder[(channelOrder.indexOf(currentChannel)+1)%channelOrder.length]));
-document.querySelector('#power').addEventListener('click',()=>{powered=!powered;stopTuningSound();clearTimeout(tuningTimer);screen.classList.remove('is-tuning');screen.classList.toggle('is-off',!powered);document.querySelector('#power').setAttribute('aria-pressed',String(powered));document.querySelector('#power').setAttribute('aria-label',powered?'Turn television off':'Turn television on');});
+document.querySelector('#power').addEventListener('click',()=>{powered=!powered;if(!powered)pauseMusicVideo();stopTuningSound();clearTimeout(tuningTimer);screen.classList.remove('is-tuning');screen.classList.toggle('is-off',!powered);document.querySelector('#power').setAttribute('aria-pressed',String(powered));document.querySelector('#power').setAttribute('aria-label',powered?'Turn television off':'Turn television on');});
 reducedMotion.addEventListener('change',()=>{stopTuningSound();clearTimeout(tuningTimer);screen.classList.remove('is-tuning')});renderChannel(currentChannel);
 
 // Featured and shuffled programs use the same saved content as the galleries.
