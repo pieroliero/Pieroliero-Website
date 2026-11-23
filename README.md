@@ -11,7 +11,7 @@ GitHub Pages serves `index.html` from the repository root. The site uses plain H
 - Vlogs: 29 saved YouTube entries in `vlogs.js`.
 - Instagram: 12 saved profile posts in `instagram-grid.js`, including the three pinned posts first.
 - Store: original product content in `store-data.js`; product links lead to the existing Squarespace store.
-- Music: Spotify is marked coming soon.
+- Music: The music panel links directly to No Money No Honey on Spotify and embeds the Bad Decisions playlist.
 - Bookings: `pierolieromgmt@gmail.com`.
 - Kick: links to the channel and replay archive. Live replay fetching requires the optional local preview server; GitHub Pages falls back to direct Kick links.
 
